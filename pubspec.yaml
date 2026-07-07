@@ -1,0 +1,68 @@
+name: nouveau_app
+description: "Nouveau™ — Own Your Aura. Premium Indian fashion, native Flutter app."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Icons
+  cupertino_icons: ^1.0.6
+
+  # Routing
+  go_router: ^14.2.7
+
+  # State management
+  provider: ^6.1.2
+
+  # Networking (API-ready)
+  dio: ^5.5.0
+
+  # Images
+  cached_network_image: ^3.4.1
+  flutter_svg: ^2.0.10+1
+
+  # Fonts (Playfair Display + Poppins, matching nouveauz.com)
+  google_fonts: ^6.2.1
+
+  # Carousels / indicators
+  carousel_slider: ^5.0.0
+  smooth_page_indicator: ^1.2.0+3
+
+  # Motion
+  animations: ^2.0.11
+  lottie: ^3.1.3
+
+  # Loading placeholders
+  shimmer: ^3.0.0
+
+  # Links / sharing
+  url_launcher: ^6.3.1
+  share_plus: ^10.0.2
+
+  # Storage
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
+
+  # Utilities
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+
+  # Custom fonts are loaded via google_fonts at runtime (matches the
+  # website's Google Fonts CDN usage: Playfair Display + Poppins).
+  # If offline bundling is later required, .ttf files can be dropped
+  # into assets/fonts/ and declared here.
