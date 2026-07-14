@@ -55,7 +55,6 @@ class _ProductCardState extends State<ProductCard> {
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           // --- sf-product-media ---
           GestureDetector(
@@ -74,11 +73,14 @@ class _ProductCardState extends State<ProductCard> {
                     left: 14,
                     top: 14,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.outOfStock.withValues(alpha: 0.18), width: 1.5),
+                        border: Border.all(
+                            color: AppColors.outOfStock.withValues(alpha: 0.18),
+                            width: 1.5),
                       ),
                       child: Text(
                         'SOLD OUT',
@@ -106,71 +108,74 @@ class _ProductCardState extends State<ProductCard> {
             ),
           ),
           // --- sf-product-body ---
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(p.category.toUpperCase(), style: AppTypography.productCategory),
-                const SizedBox(height: 6),
-                _RatingRow(rating: p.rating, count: p.reviews),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: widget.onTap,
-                  child: Text(
-                    p.title,
-                    style: AppTypography.productTitle.copyWith(
-                      fontSize: widget.compact ? 15 : 17,
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.category.toUpperCase(),
+                      style: AppTypography.productCategory),
+                  const SizedBox(height: 6),
+                  _RatingRow(rating: p.rating, count: p.reviews),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: widget.onTap,
+                    child: Text(
+                      p.title,
+                      style: AppTypography.productTitle.copyWith(
+                        fontSize: widget.compact ? 15 : 17,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    p.subcategory,
+                    style: AppTypography.productSubtitle,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  p.subcategory,
-                  style: AppTypography.productSubtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(widget.formatPrice(p.price), style: AppTypography.priceCurrent),
-                    if (p.hasDiscount) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(widget.formatPrice(p.price),
+                          style: AppTypography.priceCurrent),
+                      if (p.hasDiscount) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.formatPrice(p.originalPrice),
+                          style: AppTypography.priceOriginal.copyWith(
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _OutlineActionButton(
+                          label: 'View',
+                          onTap: widget.onTap,
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Text(
-                        widget.formatPrice(p.originalPrice),
-                        style: AppTypography.priceOriginal.copyWith(
-                          decoration: TextDecoration.lineThrough,
+                      Expanded(
+                        child: _PrimaryActionButton(
+                          label: outOfStock ? 'Sold Out' : 'Add',
+                          disabled: outOfStock,
+                          onTap: outOfStock ? null : widget.onQuickAdd,
                         ),
                       ),
                     ],
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _OutlineActionButton(
-                        label: 'VIEW',
-                        onTap: widget.onTap,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _PrimaryActionButton(
-                        label: outOfStock ? 'SOLD OUT' : 'QUICK ADD',
-                        disabled: outOfStock,
-                        onTap: outOfStock ? null : widget.onQuickAdd,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -180,30 +185,69 @@ class _ProductCardState extends State<ProductCard> {
 }
 
 class _ProductImage extends StatelessWidget {
-  // ignore: unused_field
   final String path;
   final String title;
   const _ProductImage({required this.path, required this.title});
 
   @override
   Widget build(BuildContext context) {
-    // Local seed images reference site-relative paths (e.g. /ethnic1.jpeg)
-    // that aren't bundled as Flutter assets yet. Render a tasteful
-    // placeholder that keeps the brand palette until real product photos
-    // are added to assets/images and wired via CachedNetworkImage/Image.asset.
+    final imageUrl =
+        path.startsWith('http') ? path : 'https://www.nouveauz.com$path';
     return Semantics(
       label: title,
       image: true,
-      child: Container(
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.accent, AppColors.bgDark],
-          ),
+      child: Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return _ProductImageFallback(title: title);
+        },
+        errorBuilder: (context, error, stackTrace) =>
+            _ProductImageFallback(title: title),
+      ),
+    );
+  }
+}
+
+class _ProductImageFallback extends StatelessWidget {
+  final String title;
+  const _ProductImageFallback({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.accent, AppColors.bgDark],
         ),
-        child: Icon(Icons.checkroom, size: 48, color: AppColors.crimson.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.checkroom,
+              size: 42, color: AppColors.crimson.withValues(alpha: 0.35)),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.poppins(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -258,7 +302,8 @@ class _RatingRow extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '($count)',
-            style: AppTypography.poppins(fontSize: 12, color: AppColors.textLight),
+            style:
+                AppTypography.poppins(fontSize: 12, color: AppColors.textLight),
           ),
         ],
       ],
@@ -304,36 +349,69 @@ class _PrimaryActionButton extends StatelessWidget {
   final String label;
   final bool disabled;
   final VoidCallback? onTap;
-  const _PrimaryActionButton({required this.label, required this.disabled, this.onTap});
+  const _PrimaryActionButton(
+      {required this.label, required this.disabled, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: disabled ? 0.55 : 1,
-      child: Material(
-        color: Colors.transparent,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(999))),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              gradient: const LinearGradient(
-                colors: [AppColors.primaryBtnRed, AppColors.primaryBtnDarkRed],
+    return Material(
+      color: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.white.withValues(alpha: 0.15),
+        highlightColor: Colors.white.withValues(alpha: 0.08),
+        child: Container(
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: disabled
+                ? null
+                : const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primaryBtnRed,
+                      AppColors.primaryBtnDarkRed,
+                    ],
+                  ),
+            color: disabled ? AppColors.border : null,
+            boxShadow: disabled
+                ? null
+                : [
+                    BoxShadow(
+                      color:
+                          AppColors.primaryBtnDarkRed.withValues(alpha: 0.28),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!disabled) ...[
+                const Icon(
+                  Icons.add_shopping_cart_rounded,
+                  size: 13,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                label,
+                style: AppTypography.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1,
+                  color: disabled ? AppColors.textMuted : Colors.white,
+                ),
               ),
-            ),
-            child: Text(
-              label,
-              style: AppTypography.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1,
-                color: Colors.white,
-              ),
-            ),
+            ],
           ),
         ),
       ),

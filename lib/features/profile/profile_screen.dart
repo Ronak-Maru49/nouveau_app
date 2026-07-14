@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/providers/cart_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_buttons.dart';
@@ -9,13 +13,20 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final cart = context.watch<CartProvider>();
+    final user = auth.user;
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppNavBar(
+        cartCount: cart.itemCount,
+        isAuthenticated: auth.isAuthenticated,
+        userInitials: user?.initials,
         onMenuTap: () {},
         onSearchTap: () {},
-        onWishlistTap: () {},
-        onCartTap: () {},
+        onWishlistTap: () => context.go('/wishlist'),
+        onCartTap: () => context.go('/cart'),
         onProfileTap: () {},
       ),
       body: Center(
@@ -27,19 +38,30 @@ class ProfileScreen extends StatelessWidget {
               Container(
                 width: 72,
                 height: 72,
-                decoration: const BoxDecoration(color: AppColors.accent, shape: BoxShape.circle),
-                child: const Icon(Icons.person_outline, size: 32, color: AppColors.crimson),
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                    color: AppColors.avatarBrown, shape: BoxShape.circle),
+                child: Text(user?.initials ?? 'U',
+                    style: AppTypography.poppins(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
               ),
               const SizedBox(height: 16),
-              Text('Welcome to Nouveau™', style: AppTypography.playfair(fontSize: 20, fontWeight: FontWeight.w700)),
+              Text(user?.name ?? 'Nouveau customer',
+                  style: AppTypography.playfair(
+                      fontSize: 22, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              Text(
-                'Sign in to track orders, save your wishlist, and checkout faster.',
-                textAlign: TextAlign.center,
-                style: AppTypography.poppins(color: AppColors.textMuted),
-              ),
+              Text(user?.email ?? '',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.poppins(color: AppColors.textMuted)),
               const SizedBox(height: 24),
-              PrimaryPillButton(label: 'LOGIN', onPressed: () {}),
+              PrimaryPillButton(
+                label: 'LOGOUT',
+                onPressed: () => context.read<AuthProvider>().signOut(),
+                trailing:
+                    const Icon(Icons.logout, color: Colors.white, size: 16),
+              ),
             ],
           ),
         ),

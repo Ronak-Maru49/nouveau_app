@@ -92,21 +92,6 @@ class AppFooter extends StatelessWidget {
             items: const [
               ('Home', 'Home'),
               ('Shop', 'Shop'),
-              ('Indian Ethnic Wear', 'EthnicWear'),
-              ('Premium Western Wear', 'WesternWear'),
-              ('About Us', 'About'),
-              ('Contact', 'Contact'),
-            ],
-            onTap: (page) => onNavigate?.call(page),
-          ),
-          const SizedBox(height: 24),
-          _FooterColumn(
-            title: 'Customer',
-            items: const [
-              ('Size Guide', 'SizeGuide'),
-              ('Shipping Information', 'Shipping'),
-              ('Track Order', 'TrackOrder'),
-              ('FAQ', 'FAQ'),
             ],
             onTap: (page) => onNavigate?.call(page),
           ),

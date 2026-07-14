@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../core/providers/auth_provider.dart';
 import '../core/theme/app_colors.dart';
+import '../features/auth/login_screen.dart';
 import '../features/cart/cart_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/profile/profile_screen.dart';
@@ -32,6 +35,17 @@ class _RootShellState extends State<RootShell> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    if (auth.loading) {
+      return const Scaffold(
+        backgroundColor: AppColors.bg,
+        body: Center(child: CircularProgressIndicator(color: AppColors.crimson)),
+      );
+    }
+    if (!auth.isAuthenticated) {
+      return const LoginScreen();
+    }
+
     return Scaffold(
       body: IndexedStack(index: _index, children: _screens),
       bottomNavigationBar: BottomNavigationBar(

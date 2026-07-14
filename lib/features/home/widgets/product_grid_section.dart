@@ -20,6 +20,8 @@ class ProductGridSection extends StatelessWidget {
   final VoidCallback onViewAll;
   final void Function(Product) onProductTap;
   final void Function(Product) onQuickAdd;
+  final bool Function(String productId)? isWishlisted;
+  final void Function(Product)? onWishlistToggle;
   final bool compact;
 
   const ProductGridSection({
@@ -30,6 +32,8 @@ class ProductGridSection extends StatelessWidget {
     required this.onViewAll,
     required this.onProductTap,
     required this.onQuickAdd,
+    this.isWishlisted,
+    this.onWishlistToggle,
     this.subtitle,
     this.background = AppColors.bg,
     this.compact = false,
@@ -80,14 +84,18 @@ class ProductGridSection extends StatelessWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 14,
-                childAspectRatio: 0.58,
+                childAspectRatio: 0.34,
               ),
               itemBuilder: (context, index) {
                 final product = products[index];
                 return ProductCard(
+                  key: ValueKey(
+                      '${product.id}-${isWishlisted?.call(product.id) ?? false}'),
                   product: product,
                   formatPrice: CurrencyFormatter.inr,
                   compact: compact,
+                  initiallyWishlisted: isWishlisted?.call(product.id) ?? false,
+                  onWishlistToggle: (_) => onWishlistToggle?.call(product),
                   onTap: () => onProductTap(product),
                   onQuickAdd: () => onQuickAdd(product),
                 );
@@ -97,7 +105,8 @@ class ProductGridSection extends StatelessWidget {
           OutlinePillButton(
             label: 'VIEW ALL COLLECTIONS',
             onPressed: onViewAll,
-            trailing: const Icon(Icons.arrow_forward, size: 14, color: AppColors.crimson),
+            trailing: const Icon(Icons.arrow_forward,
+                size: 14, color: AppColors.crimson),
           ),
         ],
       ),

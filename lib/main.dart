@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'core/providers/auth_provider.dart';
 import 'core/providers/cart_provider.dart';
 import 'core/providers/wishlist_provider.dart';
 import 'core/theme/app_theme.dart';
@@ -22,6 +23,7 @@ class NouveauApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => WishlistProvider()),
       ],

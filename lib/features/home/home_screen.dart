@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/providers/cart_provider.dart';
+import '../../core/providers/wishlist_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_footer.dart';
 import '../../core/widgets/app_navbar.dart';
@@ -7,22 +12,12 @@ import '../../core/widgets/marquee_ticker.dart';
 import '../../models/product_model.dart';
 import '../../models/seed_products.dart';
 import '../../navigation/app_drawer.dart';
+import '../shop/product_detail_sheet.dart';
 import 'widgets/collections_section.dart';
 import 'widgets/hero_section.dart';
 import 'widgets/philosophy_section.dart';
 import 'widgets/product_grid_section.dart';
 
-/// Home screen — assembles every homepage section in the exact order
-/// found in the compiled bundle (module 9601, default export `j`):
-///
-///   1. Navbar (sticky)
-///   2. Hero ("Wear Your Aura")
-///   3. Marquee ticker
-///   4. Collections (Ethnic / Western gradient cards)
-///   5. New Arrivals (Curated Selection)
-///   6. Our Philosophy
-///   7. Trending Now (Bestsellers)
-///   8. Footer
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -32,10 +27,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
-  int _cartCount = 0;
 
   void _addToCart(Product product) {
-    setState(() => _cartCount++);
+    context.read<CartProvider>().add(product);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${product.title} added to cart'),
@@ -47,31 +41,30 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openProduct(Product product) {
-    // Phase 2 will wire this to a real ProductDetail route via go_router.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Open product: ${product.title}')),
-    );
+    showProductDetails(context, product);
   }
 
-  void _goToShop({String? category}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Navigate to Shop${category != null ? ' → $category' : ''}')),
-    );
-  }
+  void _goToShop({String? category}) => context.go('/shop');
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final cart = context.watch<CartProvider>();
+    final wishlist = context.watch<WishlistProvider>();
+
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: AppColors.bg,
       drawer: const AppDrawer(),
       appBar: AppNavBar(
-        cartCount: _cartCount,
+        cartCount: cart.itemCount,
+        isAuthenticated: auth.isAuthenticated,
+        userInitials: auth.user?.initials,
         onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
         onSearchTap: () {},
-        onWishlistTap: () {},
-        onCartTap: () => _goToShop(),
-        onProfileTap: () {},
+        onWishlistTap: () => context.go('/wishlist'),
+        onCartTap: () => context.go('/cart'),
+        onProfileTap: () => context.go('/profile'),
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -83,7 +76,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ethnicWearCount: SeedProducts.ethnicWear.length,
               westernWearCount: SeedProducts.westernWear.length,
               onEthnicWearTap: () => _goToShop(category: 'Indian Ethnic Wear'),
-              onWesternWearTap: () => _goToShop(category: 'Indian Western Wear'),
+              onWesternWearTap: () =>
+                  _goToShop(category: 'Indian Western Wear'),
             ),
             ProductGridSection(
               eyebrow: 'Curated Selection',
@@ -94,6 +88,9 @@ class _HomeScreenState extends State<HomeScreen> {
               onViewAll: () => _goToShop(),
               onProductTap: _openProduct,
               onQuickAdd: _addToCart,
+              isWishlisted: wishlist.contains,
+              onWishlistToggle: (product) =>
+                  context.read<WishlistProvider>().toggle(product),
             ),
             PhilosophySection(onDiscoverStory: () {}),
             Container(
@@ -107,9 +104,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 onViewAll: () => _goToShop(),
                 onProductTap: _openProduct,
                 onQuickAdd: _addToCart,
+                isWishlisted: wishlist.contains,
+                onWishlistToggle: (product) =>
+                    context.read<WishlistProvider>().toggle(product),
               ),
             ),
-            AppFooter(onNavigate: (page) => _goToShop(category: page)),
+            AppFooter(onNavigate: (_) => _goToShop()),
           ],
         ),
       ),
