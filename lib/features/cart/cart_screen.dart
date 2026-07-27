@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import '../../core/payments/razorpay_checkout.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -22,17 +24,187 @@ class _CartScreenState extends State<CartScreen> {
   final _dio = Dio(BaseOptions(
       connectTimeout: const Duration(seconds: 8),
       receiveTimeout: const Duration(seconds: 8)));
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _stateController = TextEditingController();
+  final _pincodeController = TextEditingController();
+  final _notesController = TextEditingController();
+  Razorpay? _razorpay;
   bool _placingOrder = false;
+  String? _activeOrderId;
 
-  Future<void> _placeOrder() async {
-    final cart = context.read<CartProvider>();
+  @override
+  void initState() {
+    super.initState();
+    if (!kIsWeb) {
+      _razorpay = Razorpay();
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+      _razorpay!.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+    }
+  }
+
+  @override
+  void dispose() {
+    _razorpay?.clear();
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _pincodeController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openCheckoutForm() async {
     final auth = context.read<AuthProvider>();
-    final user = auth.user;
-    if (cart.lines.isEmpty || user == null) return;
+    _nameController.text = auth.user?.name ?? '';
+    _emailController.text = auth.user?.email ?? '';
+    _phoneController.text = '';
+    _addressController.text = '';
+    _cityController.text = '';
+    _stateController.text = '';
+    _pincodeController.text = '';
+    _notesController.text = '';
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Complete your order'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(labelText: 'Full name'),
+                    validator: (value) =>
+                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    validator: (value) =>
+                        (value == null || value.contains('@')) ? null : 'Valid email required',
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(labelText: 'Phone number'),
+                    validator: (value) =>
+                        (value == null || value.trim().length >= 10) ? null : 'Required',
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _addressController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'Address'),
+                    validator: (value) =>
+                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _cityController,
+                    decoration: const InputDecoration(labelText: 'City'),
+                    validator: (value) =>
+                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _stateController,
+                    decoration: const InputDecoration(labelText: 'State'),
+                    validator: (value) =>
+                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _pincodeController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'PIN code'),
+                    validator: (value) =>
+                        (value == null || value.trim().length < 4) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _notesController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'Delivery notes (optional)'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (!_formKey.currentState!.validate()) return;
+                Navigator.of(context).pop();
+                await _placeOrder(
+                  name: _nameController.text.trim(),
+                  email: _emailController.text.trim(),
+                  phone: _phoneController.text.trim(),
+                  address: _addressController.text.trim(),
+                  city: _cityController.text.trim(),
+                  state: _stateController.text.trim(),
+                  pincode: _pincodeController.text.trim(),
+                  notes: _notesController.text.trim(),
+                );
+              },
+              child: const Text('Pay now'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _placeOrder({
+    required String name,
+    required String email,
+    required String phone,
+    required String address,
+    required String city,
+    required String state,
+    required String pincode,
+    required String notes,
+  }) async {
+    final cart = context.read<CartProvider>();
+    if (cart.lines.isEmpty) return;
 
     setState(() => _placingOrder = true);
+    final shippingFee = cart.subtotal >= 2500 ? 0.0 : 99.0;
+    final totalAmount = cart.subtotal + shippingFee;
     final order = {
-      'customer': {'name': user.name, 'email': user.email},
+      'customer': {
+        'name': name,
+        'email': email,
+        'phone': phone,
+      },
+      'shipping': {
+        'address': address,
+        'city': city,
+        'state': state,
+        'pincode': pincode,
+        'notes': notes,
+      },
       'items': cart.lines
           .map((line) => {
                 'productId': line.product.id,
@@ -44,54 +216,178 @@ class _CartScreenState extends State<CartScreen> {
               })
           .toList(),
       'subtotal': cart.subtotal,
+      'shippingFee': shippingFee,
+      'discount': 0.0,
+      'totalAmount': totalAmount,
+      'payment': {'method': 'razorpay', 'status': 'pending'},
       'paymentTarget': '8238713571',
       'ownerEmail': 'maruroank5@gmail.com',
+      'notes': notes,
     };
 
     try {
-      await _dio.post('http://localhost:5000/api/orders', data: order);
+      final response = await _dio.post('http://localhost:5000/api/orders', data: order);
+      final data = response.data as Map<String, dynamic>;
+      _activeOrderId = data['_id']?.toString() ?? data['id']?.toString();
+      final paymentData = data['payment'] as Map<String, dynamic>?;
+
+      if (paymentData != null && paymentData['orderId'] != null) {
+        await _openRazorpay(paymentData, name, email, phone);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Order saved. Your bill is ready for payment. ${paymentData?['message'] ?? ''}'.trim()),
+              backgroundColor: AppColors.crimson,
+            ),
+          );
+        }
+        cart.clear();
+      }
     } catch (_) {
-      // Checkout still opens email/UPI links when the local API is offline.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('We could not create the order. Please try again.'),
+            backgroundColor: AppColors.crimson,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _placingOrder = false);
+      }
+    }
+  }
+
+  Future<void> _openRazorpay(
+    Map<String, dynamic> paymentData,
+    String name,
+    String email,
+    String phone,
+  ) async {
+    final key = paymentData['keyId']?.toString() ?? '';
+    final orderId = paymentData['orderId']?.toString() ?? '';
+    final amount = paymentData['amount'] ?? 0;
+
+    if (key.isEmpty || orderId.isEmpty || amount == 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              paymentData['message']?.toString().isNotEmpty == true
+                  ? 'Razorpay order could not be created: ${paymentData['message']}'
+                  : 'Razorpay keys are not configured on the backend.',
+            ),
+            backgroundColor: AppColors.crimson,
+          ),
+        );
+      }
+      return;
     }
 
-    final bill = _billText(user.name, cart);
-    final mailUri = Uri(
-      scheme: 'mailto',
-      path: 'maruroank5@gmail.com',
-      queryParameters: {
-        'cc': user.email,
-        'subject': 'Nouveau order bill - ${user.name}',
-        'body': bill,
-      },
-    );
+    final options = {
+      'key': key,
+      'amount': amount,
+      'name': 'Nouveau',
+      'description': 'Nouveau order payment',
+      'order_id': orderId,
+      'prefill': {'contact': phone, 'email': email, 'name': name},
+      'theme': {'color': '#B76E79'},
+    };
+
     try {
-      await launchUrl(mailUri, mode: LaunchMode.externalApplication);
+      if (kIsWeb) {
+        final opened = await openRazorpayWebCheckout(
+          options: options,
+          onSuccess: (paymentId, orderId, signature) => _markPaymentPaid(
+            paymentId: paymentId,
+            orderId: orderId,
+            signature: signature,
+          ),
+        );
+        if (!opened && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Razorpay checkout was closed.'),
+              backgroundColor: AppColors.crimson,
+            ),
+          );
+        }
+        return;
+      }
+
+      _razorpay?.open(options);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Razorpay could not be opened: $error'),
+            backgroundColor: AppColors.crimson,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    await _markPaymentPaid(
+      paymentId: response.paymentId,
+      orderId: response.orderId,
+      signature: response.signature,
+    );
+  }
+
+  Future<void> _markPaymentPaid({
+    String? paymentId,
+    String? orderId,
+    String? signature,
+  }) async {
+    if (_activeOrderId == null) return;
+    try {
+      await _dio.patch(
+        'http://localhost:5000/api/orders/$_activeOrderId/payment',
+        data: {
+          'status': 'paid',
+          'paymentId': paymentId,
+          'orderId': orderId,
+          'signature': signature,
+          'method': 'razorpay',
+        },
+      );
     } catch (_) {}
 
-    final upi = Uri.parse(
-      'upi://pay?pa=8238713571@upi&pn=Nouveau&am=${cart.subtotal.toStringAsFixed(2)}&cu=INR&tn=Nouveau%20order',
-    );
-    try {
-      await launchUrl(upi, mode: LaunchMode.externalApplication);
-    } catch (_) {}
-
-    cart.clear();
     if (mounted) {
-      setState(() => _placingOrder = false);
+      context.read<CartProvider>().clear();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Order placed and bill generated'),
-            backgroundColor: AppColors.crimson),
+          content: Text('Payment successful. Your order is confirmed.'),
+          backgroundColor: AppColors.crimson,
+        ),
       );
     }
   }
 
-  String _billText(String name, CartProvider cart) {
-    final rows = cart.lines
-        .map((line) =>
-            '${line.product.title} | Size: ${line.size} | Qty: ${line.quantity} | ${CurrencyFormatter.inr(line.lineTotal)}')
-        .join('\n');
-    return 'Nouveau order bill\nCustomer: $name\n\n$rows\n\nSubtotal: ${CurrencyFormatter.inr(cart.subtotal)}\nPayment number: 8238713571';
+  void _handlePaymentError(PaymentFailureResponse response) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Payment failed: ${response.message}'),
+          backgroundColor: AppColors.crimson,
+        ),
+      );
+    }
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('External wallet selected: ${response.walletName}'),
+          backgroundColor: AppColors.crimson,
+        ),
+      );
+    }
   }
 
   @override
@@ -113,7 +409,7 @@ class _CartScreenState extends State<CartScreen> {
       ),
       body: cart.lines.isEmpty
           ? const _EmptyCart()
-          : _CartBody(placingOrder: _placingOrder, onPlaceOrder: _placeOrder),
+          : _CartBody(placingOrder: _placingOrder, onPlaceOrder: _openCheckoutForm),
     );
   }
 }

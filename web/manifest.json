@@ -1,11 +1,11 @@
 {
-    "name": "nouveau_app",
-    "short_name": "nouveau_app",
+    "name": "Nouveau",
+    "short_name": "Nouveau",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FAF7F2",
+    "theme_color": "#0d0d0d",
+    "description": "Nouveau(TM) - Own Your Aura. Premium Indian fashion for ethnic and western wear.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

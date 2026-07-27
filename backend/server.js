@@ -18,6 +18,18 @@ app.use('/api/products', productRoutes);
 
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
+async function start() {
+  if (process.env.MONGODB_URI) {
+    try {
+      await connectDB();
+    } catch (error) {
+      console.warn('MongoDB unavailable, continuing in local-auth mode:', error.message);
+    }
+  } else {
+    console.log('MONGODB_URI not set; running in local-auth mode without MongoDB.');
+  }
+
   app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-});
+}
+
+start();

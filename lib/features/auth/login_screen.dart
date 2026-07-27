@@ -45,6 +45,16 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Future<void> _continueWithGoogle() async {
+    final ok = await context.read<AuthProvider>().signInWithGoogle();
+    if (!ok || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('Signed in with Google'),
+          backgroundColor: AppColors.crimson),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -77,7 +87,75 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppColors.textMuted, height: 1.5),
                     ),
                     const SizedBox(height: 28),
-                    _Field(
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.border),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.crimson.withValues(alpha: 0.08),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: auth.loading ? null : _continueWithGoogle,
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(52),
+                              side: const BorderSide(color: AppColors.borderDark),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                            icon: Container(
+                              width: 24,
+                              height: 24,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(
+                                color: AppColors.crimson,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                'G',
+                                style: AppTypography.poppins(
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            label: Text(
+                              'Continue with Google',
+                              style: AppTypography.poppins(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.text,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              const Expanded(child: Divider(color: AppColors.border)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  'or continue with email',
+                                  style: AppTypography.poppins(
+                                    fontSize: 12,
+                                    color: AppColors.textLight,
+                                  ),
+                                ),
+                              ),
+                              const Expanded(child: Divider(color: AppColors.border)),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          _Field(
                       controller: _name,
                       label: 'Full name',
                       icon: Icons.person_outline,
@@ -117,15 +195,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    SwitchListTile.adaptive(
-                      contentPadding: EdgeInsets.zero,
-                      activeThumbColor: AppColors.crimson,
-                      title: Text('Create account if needed',
-                          style: AppTypography.poppins(
-                              fontWeight: FontWeight.w600)),
-                      value: _createAccount,
-                      onChanged: (value) =>
-                          setState(() => _createAccount = value),
+                    Material(
+                      color: Colors.transparent,
+                      child: SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        activeThumbColor: AppColors.crimson,
+                        title: Text('Create account if needed',
+                            style: AppTypography.poppins(
+                                fontWeight: FontWeight.w600)),
+                        value: _createAccount,
+                        onChanged: (value) =>
+                            setState(() => _createAccount = value),
+                      ),
                     ),
                     if (auth.error != null) ...[
                       const SizedBox(height: 8),
@@ -148,6 +229,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               )
                             : const Icon(Icons.arrow_forward,
                                 color: Colors.white, size: 16),
+                      ),
+                    ),
+                        ],
                       ),
                     ),
                   ],

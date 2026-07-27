@@ -12,6 +12,47 @@ import '../../core/widgets/product_card.dart';
 import '../../models/seed_products.dart';
 import 'product_detail_sheet.dart';
 
+class _CollectionCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _CollectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 180,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.crimson, size: 24),
+          const SizedBox(height: 10),
+          Text(title, style: AppTypography.poppins(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: AppTypography.poppins(
+              fontSize: 12,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
 
@@ -75,6 +116,33 @@ class _ShopScreenState extends State<ShopScreen> {
                         fontSize: 13, color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 18),
+                  SizedBox(
+                    height: 132,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: const [
+                        _CollectionCard(
+                          title: 'Signature Edit',
+                          subtitle: 'Elevated staples for every occasion',
+                          icon: Icons.auto_awesome,
+                        ),
+                        SizedBox(width: 12),
+                        _CollectionCard(
+                          title: 'Festive Edit',
+                          subtitle:
+                              'Rich textures, jewel tones, statement silhouettes',
+                          icon: Icons.celebration,
+                        ),
+                        SizedBox(width: 12),
+                        _CollectionCard(
+                          title: 'Modern Minimal',
+                          subtitle: 'Polished essentials with clean lines',
+                          icon: Icons.style,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -131,38 +199,60 @@ class _ShopScreenState extends State<ShopScreen> {
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 14,
-                childAspectRatio: 0.34,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final product = products[index];
-                  return ProductCard(
-                    key: ValueKey(
-                        '${product.id}-${wishlist.contains(product.id)}'),
-                    product: product,
-                    formatPrice: CurrencyFormatter.inr,
-                    initiallyWishlisted: wishlist.contains(product.id),
-                    onWishlistToggle: (_) => wishlist.toggle(product),
-                    onTap: () => showProductDetails(context, product),
-                    onQuickAdd: () {
-                      context.read<CartProvider>().add(product);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text('${product.title} added to cart')),
+          SliverLayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.crossAxisExtent;
+              final columns = width >= 1200
+                  ? 4
+                  : width >= 820
+                      ? 3
+                      : 2;
+              final ratio = width >= 1200
+                  ? 0.42
+                  : width >= 820
+                      ? 0.38
+                      : 0.30;
+
+              return SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  width >= 820 ? 32 : 20,
+                  12,
+                  width >= 820 ? 32 : 20,
+                  32,
+                ),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 14,
+                    childAspectRatio: ratio,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final product = products[index];
+                      return ProductCard(
+                        key: ValueKey(
+                            '${product.id}-${wishlist.contains(product.id)}'),
+                        product: product,
+                        formatPrice: CurrencyFormatter.inr,
+                        initiallyWishlisted: wishlist.contains(product.id),
+                        onWishlistToggle: (_) => wishlist.toggle(product),
+                        onTap: () => showProductDetails(context, product),
+                        onQuickAdd: () {
+                          context.read<CartProvider>().add(product);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content:
+                                    Text('${product.title} added to cart')),
+                          );
+                        },
                       );
                     },
-                  );
-                },
-                childCount: products.length,
-              ),
-            ),
+                    childCount: products.length,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

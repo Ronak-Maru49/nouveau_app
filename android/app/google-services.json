@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "874143944739",
+    "project_id": "nouveau-cf16a",
+    "storage_bucket": "nouveau-cf16a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:874143944739:android:76260e2eec4b5fe5cde196",
+        "android_client_info": {
+          "package_name": "com.nouveauz.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "874143944739-90bdu3htm6qcpd6943h21713hpv4g3bd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjpi2Iw8bA26JsuM1eLv8t2oGf4juxJII"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "874143944739-90bdu3htm6qcpd6943h21713hpv4g3bd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
