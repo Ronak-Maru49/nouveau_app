@@ -26,7 +26,7 @@ const ProductSchema = new mongoose.Schema(
     discount: { type: Number, default: 0 },
     material: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true, suppressReservedKeysWarning: true }
 );
 
 // Flutter's Product.fromJson reads `_id`, which Mongo already provides

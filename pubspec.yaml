@@ -21,6 +21,7 @@ dependencies:
 
   # Networking (API-ready)
   dio: ^5.5.0
+  web: ^1.1.1
 
   # Images
   cached_network_image: ^3.4.1

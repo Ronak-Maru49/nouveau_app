@@ -27,6 +27,7 @@ class _CollectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 180,
+      height: 132,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -42,6 +43,8 @@ class _CollectionCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             subtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: AppTypography.poppins(
               fontSize: 12,
               color: AppColors.textMuted,
@@ -61,7 +64,25 @@ class ShopScreen extends StatefulWidget {
 }
 
 class _ShopScreenState extends State<ShopScreen> {
+  static const _sizeOptions = [
+    'All',
+    'S',
+    'M',
+    'L',
+    'XL',
+    'XXL',
+    '3XL',
+    '4XL',
+    '5XL',
+    '6XL',
+    '7XL',
+    '8XL',
+    '9XL',
+    '10XL',
+  ];
+
   String _category = 'All';
+  String _selectedSize = 'All';
   String _sort = 'Featured';
   RangeValues _price = const RangeValues(0, 5000);
 
@@ -76,8 +97,10 @@ class _ShopScreenState extends State<ShopScreen> {
     ];
     var products = SeedProducts.all.where((p) {
       final categoryOk = _category == 'All' || p.category == _category;
+      final sizeOk = _selectedSize == 'All' ||
+          p.sizes.any((s) => s.size.toUpperCase() == _selectedSize);
       final priceOk = p.price >= _price.start && p.price <= _price.end;
-      return categoryOk && priceOk;
+      return categoryOk && sizeOk && priceOk;
     }).toList();
 
     if (_sort == 'Price low') {
@@ -117,7 +140,7 @@ class _ShopScreenState extends State<ShopScreen> {
                   ),
                   const SizedBox(height: 18),
                   SizedBox(
-                    height: 132,
+                    height: 156,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       children: const [
@@ -157,6 +180,27 @@ class _ShopScreenState extends State<ShopScreen> {
                           ),
                         )
                         .toList(),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('Size',
+                      style: AppTypography.poppins(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 44,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _sizeOptions.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final size = _sizeOptions[index];
+                        return ChoiceChip(
+                          label: Text(size),
+                          selected: _selectedSize == size,
+                          selectedColor: AppColors.accent,
+                          onSelected: (_) => setState(() => _selectedSize = size),
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: 14),
                   Row(

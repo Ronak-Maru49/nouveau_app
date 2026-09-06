@@ -1,11 +1,13 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const Order = require('./Order');
 
 const router = express.Router();
 const ordersFile = path.join(__dirname, 'data', 'orders.json');
+const razorpaySecret = () => process.env.RAZORPAY_SECRET || process.env.RAZORPAY_KEY_SECRET;
 
 let RazorpayClient = null;
 try {
@@ -123,6 +125,14 @@ router.get('/', async (_req, res) => {
 router.post('/', async (req, res) => {
   try {
     const normalized = normalizeOrderPayload(req.body);
+
+    if (normalized.payment?.method === 'razorpay' &&
+        (!process.env.RAZORPAY_KEY_ID || !razorpaySecret())) {
+      return res.status(503).json({
+        error: 'Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend/.env.',
+      });
+    }
+
     let order;
 
     if (process.env.MONGODB_URI && mongoose.connection.readyState === 1) {
@@ -134,11 +144,11 @@ router.post('/', async (req, res) => {
       writeOrders(orders);
     }
 
-    if (RazorpayClient && process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_SECRET && normalized.payment?.method === 'razorpay') {
+    if (RazorpayClient && normalized.payment?.method === 'razorpay') {
       try {
         const razorpayOrder = await new RazorpayClient({
           key_id: process.env.RAZORPAY_KEY_ID,
-          key_secret: process.env.RAZORPAY_SECRET,
+          key_secret: razorpaySecret(),
         }).orders.create({
           amount: Math.round(normalized.totalAmount * 100),
           currency: 'INR',
@@ -181,27 +191,40 @@ router.post('/', async (req, res) => {
 router.patch('/:id/payment', async (req, res) => {
   try {
     const {
-      status = 'paid',
       paymentId = '',
       orderId = '',
       signature = '',
       method = 'razorpay',
     } = req.body;
 
+    if (method !== 'razorpay' || !paymentId || !orderId || !signature) {
+      return res.status(400).json({ error: 'Incomplete Razorpay payment details' });
+    }
+
+    if (!razorpaySecret()) {
+      return res.status(503).json({ error: 'Razorpay is not configured on the server' });
+    }
+
     if (process.env.MONGODB_URI && mongoose.connection.readyState === 1) {
       const order = await Order.findById(req.params.id);
       if (!order) {
         return res.status(404).json({ error: 'Order not found' });
       }
+
+      const verificationError = verifyRazorpayPayment(order, paymentId, orderId, signature);
+      if (verificationError) {
+        return res.status(400).json({ error: verificationError });
+      }
+
       order.payment = {
         ...order.payment,
-        status,
+        status: 'paid',
         paymentId,
         orderId: orderId || order.payment?.orderId || '',
         signature,
         method,
       };
-      order.status = status === 'paid' ? 'paid' : order.status;
+      order.status = 'paid';
       await order.save();
       return res.json(order);
     }
@@ -211,21 +234,46 @@ router.patch('/:id/payment', async (req, res) => {
     if (!existing) {
       return res.status(404).json({ error: 'Order not found' });
     }
+
+    const verificationError = verifyRazorpayPayment(existing, paymentId, orderId, signature);
+    if (verificationError) {
+      return res.status(400).json({ error: verificationError });
+    }
+
     existing.payment = {
       ...existing.payment,
-      status,
+      status: 'paid',
       paymentId,
       orderId: orderId || existing.payment?.orderId || '',
       signature,
       method,
     };
-    existing.status = status === 'paid' ? 'paid' : existing.status;
+    existing.status = 'paid';
     writeOrders(orders);
     return res.json(existing);
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
 });
+
+function verifyRazorpayPayment(order, paymentId, orderId, signature) {
+  if (order.payment?.orderId !== orderId) {
+    return 'Razorpay order does not match this order';
+  }
+
+  const expectedSignature = crypto
+    .createHmac('sha256', razorpaySecret())
+    .update(`${orderId}|${paymentId}`)
+    .digest('hex');
+  const expected = Buffer.from(expectedSignature, 'utf8');
+  const received = Buffer.from(signature, 'utf8');
+
+  if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
+    return 'Invalid Razorpay payment signature';
+  }
+
+  return null;
+}
 
 async function sendOrderEmail(order) {
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) return;

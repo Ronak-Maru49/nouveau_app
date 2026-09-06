@@ -4,9 +4,9 @@
     "name": "Google User",
     "email": "google-user@nouveau.local",
     "passwordHash": "$2a$10$N3k23jJBy.5q0tnnvwXbo.e9qwdQku0dvY0qYYxwC2dGoIa13rXSq",
-    "provider": "firebase-jwt",
+    "provider": "google",
     "createdAt": "2026-07-21T14:51:11.742Z",
-    "lastLoginAt": "2026-07-21T14:51:11.767Z",
+    "lastLoginAt": "2026-09-06T05:43:30.970Z",
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzE3ODQ2NDU0NzE3NDIiLCJuYW1lIjoiR29vZ2xlIFVzZXIiLCJlbWFpbCI6Imdvb2dsZS11c2VyQG5vdXZlYXUubG9jYWwiLCJwcm92aWRlciI6Imdvb2dsZSIsImlhdCI6MTc4NDY0NTQ3MSwiZXhwIjoxNzg1MjUwMjcxfQ.MnB7f5cGBAsAy1kE0NyjSgtEJa1jANvubnOOkriRMAc"
   },
   {
@@ -16,6 +16,6 @@
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30",
     "provider": "local",
     "createdAt": "2026-07-27T04:41:22.113Z",
-    "lastLoginAt": "2026-07-27T05:25:32.086Z"
+    "lastLoginAt": "2026-09-06T05:59:49.943Z"
   }
 ]

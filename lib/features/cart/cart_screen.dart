@@ -21,6 +21,10 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
+  static const _apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:5000',
+  );
   final _dio = Dio(BaseOptions(
       connectTimeout: const Duration(seconds: 8),
       receiveTimeout: const Duration(seconds: 8)));
@@ -90,23 +94,29 @@ class _CartScreenState extends State<CartScreen> {
                     controller: _nameController,
                     decoration: const InputDecoration(labelText: 'Full name'),
                     validator: (value) =>
-                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                        (value == null || value.trim().isEmpty)
+                            ? 'Required'
+                            : null,
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(labelText: 'Email'),
-                    validator: (value) =>
-                        (value == null || value.contains('@')) ? null : 'Valid email required',
+                    validator: (value) => (value == null || value.contains('@'))
+                        ? null
+                        : 'Valid email required',
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(labelText: 'Phone number'),
+                    decoration:
+                        const InputDecoration(labelText: 'Phone number'),
                     validator: (value) =>
-                        (value == null || value.trim().length >= 10) ? null : 'Required',
+                        (value == null || value.trim().length >= 10)
+                            ? null
+                            : 'Required',
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
@@ -114,21 +124,27 @@ class _CartScreenState extends State<CartScreen> {
                     maxLines: 2,
                     decoration: const InputDecoration(labelText: 'Address'),
                     validator: (value) =>
-                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                        (value == null || value.trim().isEmpty)
+                            ? 'Required'
+                            : null,
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: _cityController,
                     decoration: const InputDecoration(labelText: 'City'),
                     validator: (value) =>
-                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                        (value == null || value.trim().isEmpty)
+                            ? 'Required'
+                            : null,
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: _stateController,
                     decoration: const InputDecoration(labelText: 'State'),
                     validator: (value) =>
-                        (value == null || value.trim().isEmpty) ? 'Required' : null,
+                        (value == null || value.trim().isEmpty)
+                            ? 'Required'
+                            : null,
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
@@ -136,13 +152,16 @@ class _CartScreenState extends State<CartScreen> {
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(labelText: 'PIN code'),
                     validator: (value) =>
-                        (value == null || value.trim().length < 4) ? 'Required' : null,
+                        (value == null || value.trim().length < 4)
+                            ? 'Required'
+                            : null,
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: _notesController,
                     maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'Delivery notes (optional)'),
+                    decoration: const InputDecoration(
+                        labelText: 'Delivery notes (optional)'),
                   ),
                 ],
               ),
@@ -220,13 +239,12 @@ class _CartScreenState extends State<CartScreen> {
       'discount': 0.0,
       'totalAmount': totalAmount,
       'payment': {'method': 'razorpay', 'status': 'pending'},
-      'paymentTarget': '8238713571',
-      'ownerEmail': 'maruroank5@gmail.com',
       'notes': notes,
     };
 
     try {
-      final response = await _dio.post('http://localhost:5000/api/orders', data: order);
+      final response =
+          await _dio.post('$_apiBaseUrl/api/orders', data: order);
       final data = response.data as Map<String, dynamic>;
       _activeOrderId = data['_id']?.toString() ?? data['id']?.toString();
       final paymentData = data['payment'] as Map<String, dynamic>?;
@@ -237,7 +255,9 @@ class _CartScreenState extends State<CartScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Order saved. Your bill is ready for payment. ${paymentData?['message'] ?? ''}'.trim()),
+              content: Text(
+                  'Order saved. Your bill is ready for payment. ${paymentData?['message'] ?? ''}'
+                      .trim()),
               backgroundColor: AppColors.crimson,
             ),
           );
@@ -345,17 +365,33 @@ class _CartScreenState extends State<CartScreen> {
   }) async {
     if (_activeOrderId == null) return;
     try {
-      await _dio.patch(
-        'http://localhost:5000/api/orders/$_activeOrderId/payment',
+      final response = await _dio.patch(
+        '$_apiBaseUrl/api/orders/$_activeOrderId/payment',
         data: {
-          'status': 'paid',
           'paymentId': paymentId,
           'orderId': orderId,
           'signature': signature,
           'method': 'razorpay',
         },
       );
-    } catch (_) {}
+      if (response.statusCode != 200) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+        );
+      }
+    } on DioException catch (error) {
+      if (mounted) {
+        final message = error.response?.data is Map
+            ? (error.response?.data['error']?.toString() ??
+                'Payment verification failed.')
+            : 'Payment verification failed. Please contact support.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: AppColors.crimson),
+        );
+      }
+      return;
+    }
 
     if (mounted) {
       context.read<CartProvider>().clear();
@@ -409,7 +445,8 @@ class _CartScreenState extends State<CartScreen> {
       ),
       body: cart.lines.isEmpty
           ? const _EmptyCart()
-          : _CartBody(placingOrder: _placingOrder, onPlaceOrder: _openCheckoutForm),
+          : _CartBody(
+              placingOrder: _placingOrder, onPlaceOrder: _openCheckoutForm),
     );
   }
 }

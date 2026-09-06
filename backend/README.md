@@ -14,6 +14,10 @@ Create a local `.env` file in this `backend` directory using `.env.example` as a
 MONGODB_URI=mongodb://localhost:27017/nouveau_app
 PORT=5000
 
+# Razorpay credentials. Use test keys during development; keep the secret server-side.
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_secret_key
+
 # Optional, only needed for automatic email delivery:
 SMTP_HOST=
 SMTP_PORT=587
@@ -37,4 +41,5 @@ Useful endpoints:
 - `POST /api/auth/persons` saves or updates login/person records.
 - `GET /api/products` lists products.
 - `POST /api/orders` saves checkout orders and emails the owner/customer when SMTP is configured.
+- `PATCH /api/orders/:id/payment` verifies the Razorpay signature before marking an order paid.
 - `GET /api/orders` lists saved orders.
